@@ -1,0 +1,15 @@
+Flask
+click
+Jinja2
+MarkupSafe
+pymongo
+Werkzeug
+pika
+flask_cors
+opencv-python
+torch
+torchvision
+thop
+tqdm
+seaborn
+pandas
