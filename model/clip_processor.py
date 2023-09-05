@@ -61,12 +61,7 @@ def process_video_clip(model:Clip,video_path:str,text_queries,interval=3,max_fra
 if __name__=='__main__':
     #max precision given different threshold criteria
     video_name='./data/hong_kong_airport_demo_data.mp4'
-    text_queries=[
-        'a white backpack','a blue backpack','a tote bag'
-    ]
-    clip_queries=[f'an image with {t} in it' for t in text_queries]
-    clip_queries.append('an image of a crowd at an airport')
-    clip_queries.append('an image of a steak')
+    text_querues=['an image with a black and white backpack in it','a black and white backpack','a image of crowd at a airport']
     # text_queries=[
     #     'checkered tote',
     # ]
@@ -74,7 +69,7 @@ if __name__=='__main__':
     #process_video_owl(video_name,text_queries,result_dir='hong_kong_airport_3')
     #use clio
     clip=Clip()
-    print(clip_queries)
-    res=process_video_clip(clip,video_name,clip_queries,max_frame=1800)
+    print(text_querues)
+    res=process_video_clip(clip,video_name,text_querues,max_frame=2700)
     with open(f'{video_name}_scores.json','w') as f:
-        json.dump({'query':clip_queries,'result':res},f)
+        json.dump({'query':text_querues,'result':res},f)

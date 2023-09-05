@@ -4,9 +4,10 @@
 test_cases=[
     #Note: even if there is only one object to be found,
     #'object' should still be a list!
+    #bags: tote bag, handbad, belt bag
     {
-        #general objects
-        'object':['white backpack','white suitcase','black backpack','black suitcase'],
+        #general objects with color
+        'object':['green backpack','red suitcase'],
         'type':'lang',
     },
     {
@@ -17,8 +18,8 @@ test_cases=[
     },
     {
         #novel luggage 2 img
-        'object':['test_images/pink_short_luggage.jpg'],
-        'type':'image',
+        'object':['brown tote bag'],
+        'type':'lang',
     },
     {
         #novel luggage 2 lang
@@ -26,37 +27,49 @@ test_cases=[
         'type':'lang',
     },
     {
-        #person 1 image
-        'object':['test_images/rainbow_shirt_white_shoes_girl.jpg'],
-        'type':'image',
-    },
-    {
         #person 1 lang
-        'object':['girl wearing pink coat and black pants with a pink luggage'],
-        'type':'lang'
-    },
-    
-    #testcases above already demoed
-    #please fine tune these two langauge queries
 
-    {
-        #person 2 lang
-
-        'object':['black shirt man'],
+        'object':['man wearing white shirt and blue jeans with two black suitcases'],
         'type':'lang'
     },
     {
-        #person 2 img
+        #man 1 img
 
         'object':['test_images/white_shirt_blue_jeans_man.jpg'],
         'type':'image',
     },
     {
-        #person 2 img
+        #man 2 img
 
-        'object':['white shirt blue jeans man'],
-        'type':'lang',
+        'object':['test_images/blue_white_coat_man.JPG'],
+        'type':'image',
     },
+    {
+        #woman 1 image
+        'object':['test_images/white_coat_blue_jeans_woman.JPG'],
+        'type':'image',
+    },
+    {
+        #woman 2 image
+        'object':['test_images/blue_white_coat_man.JPG'],
+        'type':'image',
+    },
+    {
+        #man 2 image seperated
+        'object':['test_images/blue_white_man_upper.JPG','test_images/blue_white_coat_man_lower.JPG'],
+        'type':'image',
+    },
+    {
+        # boy image
+        'object':['test_images/rainbow_shirt_white_shoes_girl.jpg'],
+        'type':'image',
+    },
+    {
+        #girl image
+        'object':['test_images/blue_boy.JPG'],
+        'type':'image',
+    },
+    
 
     ######## use the testcases above first ########
     {

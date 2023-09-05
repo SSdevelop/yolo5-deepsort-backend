@@ -7,49 +7,8 @@ import os
 import argparse
 from transformers import AutoProcessor, AutoModelForZeroShotObjectDetection
 import torch
-
-def non_max_suppression_fast(boxes, overlapThresh):
-    if len(boxes) == 0:
-        return []
-    if boxes.dtype.kind == "i":
-        boxes = boxes.astype("float")
-    pick = []
-    x1 = boxes[:,0]
-    y1 = boxes[:,1]
-    x2 = boxes[:,2]
-    y2 = boxes[:,3]
-    #add tiny number to avoid zero
-    area = (x2 - x1 + 1) * (y2 - y1 + 1)+1e-7
-    idxs = np.argsort(y2)
-    while len(idxs) > 0:
-        last = len(idxs) - 1
-        i = idxs[last]
-        pick.append(i)
-        xx1 = np.maximum(x1[i], x1[idxs[:last]])
-        yy1 = np.maximum(y1[i], y1[idxs[:last]])
-        xx2 = np.minimum(x2[i], x2[idxs[:last]])
-        yy2 = np.minimum(y2[i], y2[idxs[:last]])
-        w = np.maximum(0, xx2 - xx1 + 1)
-        h = np.maximum(0, yy2 - yy1 + 1)
-        overlap = (w * h) / area[idxs[:last]]
-        to_zero = np.where(overlap > overlapThresh)[0]
-        x1[idxs[to_zero]] = 0
-        y1[idxs[to_zero]] = 0
-        x2[idxs[to_zero]] = 0
-        y2[idxs[to_zero]] = 0
-        idxs = np.delete(idxs, last)
-    return boxes.astype("int").tolist()
-
-def remove_zero_boxes(result):
-    if 'boxes' not in result:
-        return result
-    new_result={k:[] for k in result}
-    for index,box in enumerate(result['boxes']):
-        box_int=[int(i) for i in box]
-        if box_int != [0, 0, 0, 0]:
-            for k in result:
-                new_result[k].append(result[k][index])
-    return new_result
+import torchvision
+#nms per class!
 
 def inverse_sigmoid(scores):
     return torch.log(scores/(torch.ones_like(scores,dtype=torch.float)-scores))
@@ -71,16 +30,18 @@ class FrameProcessor:
             raw_results = self.processor.post_process_object_detection(outputs, threshold=0.05,target_sizes=target_sizes)
             #raw result length=1 since only one frame
             assert(len(raw_results)==1)
+        keep_indexs=torchvision.ops.batched_nms(raw_results[0]["boxes"],raw_results[0]["scores"],raw_results[0]['labels'],0.3)
         results={
-            'scores':raw_results[0]["scores"].tolist(),
-            'labels':raw_results[0]["labels"].tolist(),
-            'logits':inverse_sigmoid(raw_results[0]["scores"]).tolist(),
-            'boxes':raw_results[0]["boxes"].tolist()
+            'scores':raw_results[0]["scores"][keep_indexs].tolist(),
+            'labels':raw_results[0]["labels"][keep_indexs].tolist(),
+            'logits':inverse_sigmoid(raw_results[0]["scores"][keep_indexs]).tolist(),
+            'boxes':raw_results[0]["boxes"][keep_indexs].tolist()
         }
-        results['boxes']=non_max_suppression_fast(np.array(results['boxes']), 0.3)
-        results = remove_zero_boxes(results)
         return results
     def image_query(self,image,image_query,device='cpu'):
+        #This processor will resize both frame and qury image to 768*768
+        #We do not want this since it will squash image of a person to a square
+        #However, if we set do_resize=False,do_center_crop=False, we need to change model config as well
         inputs = self.processor(images=image, query_images=image_query, return_tensors="pt").to(device)
         with torch.no_grad():
             outputs = self.model.image_guided_detection(**inputs)
@@ -100,16 +61,14 @@ class FrameProcessor:
             'boxes':raw_results[0]["boxes"].tolist(),
             'logits':inverse_sigmoid(raw_results[0]["scores"]).tolist(),
         }
-        results['boxes']=non_max_suppression_fast(np.array(results['boxes']), 0.3)
-        results = remove_zero_boxes(results)
         return results
 
-def visualize_results_lang(image,result,classes):
+def visualize_results(image,result,classes,top_left_caption):
+    image=cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
     #different color for different bounding box
-    colors=[(255-round(255/i),round(255/i)) for i in range(len(classes)+1,1,-1)]
-    class_string=", ".join([f"{index+1}->{c}" for index,c in enumerate(classes)])
-    format_string=f"Classes: [{class_string}]"
-    cv2.putText(image, format_string,(5,25), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255,255,255), 2)
+    color_step=255//len(classes)
+    colors=[(255-i*color_step,0,i*color_step) for i in range(1,len(classes)+1)]
+    cv2.putText(image, top_left_caption,(5,25), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255,255,255), 2)
     for index,label in enumerate(result['labels']):
         point=result['boxes'][index]
         p1_x,p1_y,p2_x,p2_y=int(point[0]),int(point[1]),int(point[2]),int(point[3])
@@ -119,19 +78,7 @@ def visualize_results_lang(image,result,classes):
         cv2.putText(image, f"{label+1} ({score_str})",(p1_x+5, p1_y+25), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2)
     return image
 
-def visualize_result_image(image,result,caption=None):
-    #different color for different bounding box
-    color=(255,255,0)
-    if caption is not None:
-        cv2.putText(image, caption,(5,25), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255,255,255), 2)
-    for index,score in enumerate(result['scores']):
-        point=result['boxes'][index]
-        p1_x,p1_y,p2_x,p2_y=int(point[0]),int(point[1]),int(point[2]),int(point[3])
-        #print(f"P1： ({p1_x},{p1_y}) P2: ({p2_x},{p2_y})")
-        cv2.rectangle(img=image,pt1=(p1_x,p1_y),pt2=(p2_x,p2_y),color=color,thickness=3)
-        cv2.putText(image, "{:.2f}".format(score),(p1_x+5, p1_y+25), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2)
-    return image
-
+#singleton object
 vlm_processor=FrameProcessor()
 
 if __name__=="__main__":
