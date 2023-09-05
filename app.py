@@ -1,8 +1,8 @@
 import cv2
 from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS
-from model.owl.lf import run_video_to_video
-from model.owl.outputs import VideoResult
+# from model.owl.lf import run_video_to_video
+# from model.owl.outputs import VideoResult
 from model.frame_processor import FrameProcessor, visualize_results
 import logging
 import os
@@ -17,13 +17,29 @@ logging.basicConfig(level=logging_level,format='[%(lineno)d]:[%(asctime)s]:%(mes
 
 @app.route('/files/<filename>', methods=['GET'])
 def get_file(filename):
-    response = send_file(os.path.join('utils', 'videos', filename))
-    return response
+    try:
+        if not filename.endswith('.mp4'):
+            filename = f'{filename}.mp4'
+        if not os.path.exists(os.path.join('utils', 'videos', filename)):
+            return jsonify({'message': 'File not found'}), 404
+        response = send_file(os.path.join('utils', 'videos', filename))
+        return response
+    except Exception as e:
+        logging.error(e)
+        return jsonify({'message': 'Something went wrong', 'error': str(e)}), 500
 
 @app.route('/files/results/<filename>', methods=['GET'])
 def get_result_file(filename):
-    response = send_file(os.path.join('results', filename))
-    return response
+    try:
+        if not filename.endswith('.mp4'):
+            filename = f'{filename}.mp4'
+        if not os.path.exists(os.path.join('results', filename)):
+            return jsonify({'message': 'File not found'}), 404
+        response = send_file(os.path.join('results', filename))
+        return response
+    except Exception as e:
+        logging.error(e)
+        return jsonify({'message': 'Something went wrong', 'error': str(e)}), 500
 
 @app.route('/upload', methods=['POST'])
 def inference():
@@ -47,6 +63,10 @@ def inference():
     except Exception as e:
         logging.error(e)
         return jsonify({'message': 'Something went wrong', 'error': str(e)}), 500
+    
+@app.route('/hello', methods=['GET'])
+def hello():
+    return jsonify({'message': 'Hello'}), 200
 
 def process_image_query(body):
     os.makedirs('results', exist_ok=True)
