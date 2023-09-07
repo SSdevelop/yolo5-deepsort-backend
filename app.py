@@ -29,14 +29,16 @@ def get_file(filename):
         logging.error(e)
         return jsonify({'message': 'Something went wrong', 'error': str(e)}), 500
 
-@app.route('/files/results/<filename>', methods=['GET'])
-def get_result_file(filename):
+@app.route('/files/results', methods=['GET'])
+def get_result_file():
     try:
-        if not filename.endswith('.mp4'):
+        filepath = request.args.get('filepath')
+        print(filepath[2:])
+        if not filepath.endswith('.mp4'):
             filename = f'{filename}.mp4'
-        if not os.path.exists(os.path.join('results', filename)):
+        if not os.path.exists(os.path.join(filepath[2:])):
             return jsonify({'message': 'File not found'}), 404
-        response = send_file(os.path.join('results', filename))
+        response = send_file(os.path.join(filepath[2:]))
         return response
     except Exception as e:
         logging.error(e)
@@ -57,8 +59,8 @@ def inference():
             process_image_query(body)
             return jsonify({'message': 'Success'}), 200
         elif query_type == 'lang':
-            process_lang_query(body)
-            return jsonify({'message': 'Success'}), 200
+            result_dirs = process_lang_query(body)
+            return jsonify({'message': result_dirs}), 200
         else:
             return jsonify({'message': 'Invalid query type'}), 400
     
@@ -104,7 +106,7 @@ def process_image_query(body):
 def process_lang_query(body):
     os.makedirs('results', exist_ok=True)
     lang_query = [body['lang_query']]
-    video_names = [body['video_names']]
+    video_names = body['video_names'].split(',')
     result_dirs = []
     for video_name in video_names:
         video = cv2.VideoCapture(os.path.join('utils', 'videos', video_name))
@@ -118,7 +120,7 @@ def process_lang_query(body):
                 break
 
             frame=cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
-            if frame_count % 5==0:
+            if frame_count % 6 == 0:
                 result,visualized_image=dino_processor.process_image(frame,lang_query,visualize=True)
                 result['frame']=frame_count
                 video_results.append(result)
@@ -138,7 +140,7 @@ def process_lang_query(body):
         # for k in sorted_chunks_ma:
         #     sorted_chunks_ma[k]=sorted_chunks_ma[k]
         result_dir=video_result.dump_top_k_chunks(video_name,sorted_chunks_ma,3)
-        result_dirs.append(result_dir)
+        result_dirs.append(result_dir[0])
     return result_dirs
 if __name__ == '__main__':
     #start the flask app

@@ -288,7 +288,7 @@ class VideoResult:
             connected_name=label.replace(' ','_')
             chunk_name=file_name(connected_name)
             raw_name,suffix=split_suffix(chunk_name)
-            result_save_path=f'./results/{video_name}_{raw_name}_chunks'
+            result_save_path=f'./results/{video_name}_{raw_name}'
             os.makedirs(result_save_path,exist_ok=True)
             print(f"Top-{top_k} chunks will be saved in: {result_save_path}")
             video = cv2.VideoCapture(f'utils/videos/{video_path}')
@@ -336,9 +336,9 @@ class VideoResult:
                         cv2.rectangle(img=frame,pt1=(p1_x,p1_y),pt2=(p2_x,p2_y),color=color,thickness=3)
                         cv2.putText(frame, "{:.2f}".format(box[1]),(p1_x+5, p1_y+25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
                     edited_frames.append(frame)
-                print(edited_frames)
+                # print(edited_frames)
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                chunk_name = f'{result_save_path}/chunk_rank{i}_{start}_{end}.mp4'
+                chunk_name = f'{result_save_path}/rank{i}.mp4'
                 chunk_writer = cv2.VideoWriter(chunk_name, fourcc, 30, (edited_frames[0].shape[1], edited_frames[0].shape[0]))
                 for frame in edited_frames:
                     chunk_writer.write(frame)
