@@ -7,6 +7,7 @@ from model.frame_processor import FrameProcessor, visualize_results
 from model.dino_processor import dino_processor
 import logging
 import os
+from pathlib import Path
 
 checkpoint = "google/owlvit-base-patch32"
 
@@ -35,8 +36,9 @@ def get_result_file():
         filepath = request.args.get('filepath')
         print(filepath[2:])
         if not filepath.endswith('.mp4'):
-            filename = f'{filename}.mp4'
-        if not os.path.exists(os.path.join(filepath[2:])):
+            filepath = f'{filepath}.mp4'
+        pathobj = Path(filepath[2:])
+        if not pathobj.exists():
             return jsonify({'message': 'File not found'}), 404
         response = send_file(os.path.join(filepath[2:]))
         return response

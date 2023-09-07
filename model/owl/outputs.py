@@ -288,7 +288,7 @@ class VideoResult:
             connected_name=label.replace(' ','_')
             chunk_name=file_name(connected_name)
             raw_name,suffix=split_suffix(chunk_name)
-            result_save_path=f'./results/{video_name}_{raw_name}'
+            result_save_path=f'./results/{video_name.split(".")[0]}_{raw_name}'
             os.makedirs(result_save_path,exist_ok=True)
             print(f"Top-{top_k} chunks will be saved in: {result_save_path}")
             video = cv2.VideoCapture(f'utils/videos/{video_path}')
