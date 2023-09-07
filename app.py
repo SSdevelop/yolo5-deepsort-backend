@@ -2,8 +2,9 @@ import cv2
 from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS
 # from model.owl.lf import run_video_to_video
-# from model.owl.outputs import VideoResult
+from model.owl.outputs import VideoResult
 from model.frame_processor import FrameProcessor, visualize_results
+from model.dino_processor import dino_processor
 import logging
 import os
 
@@ -57,11 +58,12 @@ def inference():
             return jsonify({'message': 'Success'}), 200
         elif query_type == 'lang':
             process_lang_query(body)
+            return jsonify({'message': 'Success'}), 200
         else:
             return jsonify({'message': 'Invalid query type'}), 400
     
     except Exception as e:
-        logging.error(e)
+        logging.error(e.with_traceback())
         return jsonify({'message': 'Something went wrong', 'error': str(e)}), 500
     
 @app.route('/hello', methods=['GET'])
@@ -99,6 +101,45 @@ def process_image_query(body):
         video_writer.release()
         video.release()
 
+def process_lang_query(body):
+    os.makedirs('results', exist_ok=True)
+    lang_query = [body['lang_query']]
+    video_names = [body['video_names']]
+    result_dirs = []
+    for video_name in video_names:
+        video = cv2.VideoCapture(os.path.join('utils', 'videos', video_name))
+        # os.makedirs(os.path.join('results'), exist_ok=True)
+        fps = video.get(cv2.CAP_PROP_FPS)
+        frame_count = 0
+        video_results = []
+        while video.isOpened():
+            ret, frame = video.read()
+            if not ret:
+                break
+
+            frame=cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
+            if frame_count % 5==0:
+                result,visualized_image=dino_processor.process_image(frame,lang_query,visualize=True)
+                result['frame']=frame_count
+                video_results.append(result)
+            else:
+                video_results.append({'frame':frame_count})
+            frame_count += 1
+        video.release()
+        results = {
+            'query':lang_query,
+            'type':'lang',
+            'result':video_results,
+        }
+        print(results)
+        video_result=VideoResult()
+        video_result.from_data_dict(results)
+        sorted_chunks_ma=video_result.sort_logits_chunks_ma(90)
+        # for k in sorted_chunks_ma:
+        #     sorted_chunks_ma[k]=sorted_chunks_ma[k]
+        result_dir=video_result.dump_top_k_chunks(video_name,sorted_chunks_ma,3)
+        result_dirs.append(result_dir)
+    return result_dirs
 if __name__ == '__main__':
     #start the flask app
     app.run(debug=True)

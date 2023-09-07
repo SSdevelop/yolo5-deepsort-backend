@@ -145,8 +145,8 @@ def process_video_gdino(
             start=time.perf_counter()
             if query_type=='lang':
                 result,visualized_image=dino_processor.process_image(frame,text_queries,visualize=result_video is not None)
-                plt.imshow(visualized_image)
-                exit()
+                # plt.imshow(visualized_image)
+                # exit()
             else:
                 result,visualized_image=dino_processor.image_query(frame,image_queries_cv2)
             result['frame']=frame_count

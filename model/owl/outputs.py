@@ -4,9 +4,9 @@ import cv2
 import os
 import torchvision
 from PIL import Image
-from utils.utils import file_name,split_suffix
+from .utils.utils import file_name,split_suffix
 import bisect
-from utils.fn import max_with_default,square_ma
+from .utils.fn import max_with_default,square_ma
 import argparse
 import matplotlib.pyplot as plt
 #location of each property at self.data of FrameResult
@@ -278,6 +278,8 @@ class VideoResult:
         plt.savefig(fig_path)
 
     def dump_top_k_chunks(self, video_path, sorted_results, top_k:int):
+        print(f'video_path={video_path}')
+        print(f'sorted_results={sorted_results}')
         video_name=file_name(video_path)
         final_result_dir=[]
         max_scorer=max_with_default(self.box_logits_min())
@@ -289,17 +291,21 @@ class VideoResult:
             result_save_path=f'./results/{video_name}_{raw_name}_chunks'
             os.makedirs(result_save_path,exist_ok=True)
             print(f"Top-{top_k} chunks will be saved in: {result_save_path}")
-            video = cv2.VideoCapture(video_path)
+            video = cv2.VideoCapture(f'utils/videos/{video_path}')
+            print(os.path.isfile(f'utils/videos/{video_path}'))
             non_empty_frame=self.non_skipped_frames()
             if len(sorted_results[label])<top_k:
                 print(f"Only {len(sorted_results[label])} for label {label}. Topk : {top_k}")
             top_k_chunks=sorted_results[label][:top_k]
-            self.plot_frame_scores(non_empty_frame,frame_results[label],result_save_path,connected_name,top_k_chunks)
+            # self.plot_frame_scores(non_empty_frame,frame_results[label],result_save_path,connected_name,top_k_chunks)
             for i, chunk in enumerate(top_k_chunks):
                 start, end=chunk
                 #The frames are saved in memory
                 edited_frames = []
                 video.set(cv2.CAP_PROP_POS_FRAMES, start)
+                ret, frame = video.read()
+                # print(frame)
+                # return
                 for frame_index in range(start, end+1):
                     ret, frame = video.read()
                     #skip unprocessed frame
@@ -330,7 +336,7 @@ class VideoResult:
                         cv2.rectangle(img=frame,pt1=(p1_x,p1_y),pt2=(p2_x,p2_y),color=color,thickness=3)
                         cv2.putText(frame, "{:.2f}".format(box[1]),(p1_x+5, p1_y+25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
                     edited_frames.append(frame)
-                print(len(edited_frames))
+                print(edited_frames)
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                 chunk_name = f'{result_save_path}/chunk_rank{i}_{start}_{end}.mp4'
                 chunk_writer = cv2.VideoWriter(chunk_name, fourcc, 30, (edited_frames[0].shape[1], edited_frames[0].shape[0]))

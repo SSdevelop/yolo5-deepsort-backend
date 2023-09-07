@@ -10,8 +10,8 @@ from PIL import Image
 #TODO: extract a parent class
 class DinoProcessor:
     def __init__(self,box_thresh=BOX_TRESHOLD,text_thresh=TEXT_TRESHOLD) -> None:
-        config_file="GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py"
-        checkpoint = "GroundingDINO/weights/groundingdino_swint_ogc.pth"
+        config_file="model/GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py"
+        checkpoint = "model/GroundingDINO/weights/groundingdino_swint_ogc.pth"
         self.model = load_model(config_file, checkpoint)
         self.box_thresh=box_thresh
         self.text_thresh=text_thresh
