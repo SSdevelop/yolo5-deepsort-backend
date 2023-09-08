@@ -40,7 +40,7 @@ def get_result_file():
         pathobj = Path(filepath[2:])
         if not pathobj.exists():
             return jsonify({'message': 'File not found'}), 404
-        response = send_file(os.path.join(filepath[2:]))
+        response = send_file(os.path.join(filepath[2:]), mimetype='video/mp4')
         return response
     except Exception as e:
         logging.error(e)

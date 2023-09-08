@@ -337,7 +337,7 @@ class VideoResult:
                         cv2.putText(frame, "{:.2f}".format(box[1]),(p1_x+5, p1_y+25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
                     edited_frames.append(frame)
                 # print(edited_frames)
-                fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                fourcc = cv2.VideoWriter_fourcc(*'h264')
                 chunk_name = f'{result_save_path}/rank{i}.mp4'
                 chunk_writer = cv2.VideoWriter(chunk_name, fourcc, 30, (edited_frames[0].shape[1], edited_frames[0].shape[0]))
                 for frame in edited_frames:
