@@ -8,11 +8,14 @@ from model.dino_processor import dino_processor
 import logging
 import os
 from pathlib import Path
+from werkzeug.utils import secure_filename
+import torch
 
 checkpoint = "google/owlvit-base-patch32"
-
+UPLOAD_FOLDER = 'results/temp'
 app = Flask(__name__)
 CORS(app)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 logging_level = logging.DEBUG
 logging.basicConfig(level=logging_level,format='[%(lineno)d]:[%(asctime)s]:%(message)s')
@@ -58,8 +61,9 @@ def inference():
         query_type = body['query_type']
         if query_type == 'image':
             # images = body['images']
-            process_image_query(body)
-            return jsonify({'message': 'Success'}), 200
+            file = request.files.getlist('image_query')
+            result_dirs = process_image_query(body, file)
+            return jsonify({'message': result_dirs}), 200
         elif query_type == 'lang':
             result_dirs = process_lang_query(body)
             return jsonify({'message': result_dirs}), 200
@@ -74,36 +78,62 @@ def inference():
 def hello():
     return jsonify({'message': 'Hello'}), 200
 
-def process_image_query(body):
+def process_image_query(body, file):
     os.makedirs('results', exist_ok=True)
-    interval = 5
-    video_names = body['video_names']
-    images = body['images']
-    image_names = [os.path.basename(image) for image in images]
-    images=[cv2.imread(name) for name in images]
-    images=[cv2.cvtColor(i,cv2.COLOR_BGR2RGB) for i in images]
-    frame_processor = FrameProcessor(checkpoint)
+    os.makedirs('results/temp', exist_ok=True)
+    interval = 5 
+    video_names_temp = body['video_names']
+    if not isinstance(video_names_temp, list):
+        video_names = [video_names_temp]
+    else:
+        video_names = video_names_temp
+    images = file
+    print(images)
+    image_names = [each_file.filename for each_file in images]  
+    filenames = [secure_filename(imagename) for imagename in image_names]
+    # (image.save(os.path.join(UPLOAD_FOLDER, (filename for filename in filenames))) for image in images)
+    # (image.save(os.path.join(UPLOAD_FOLDER)) for image in images)
+    for image in images:
+        image.save('results/temp/'+image.filename)
+    images=[cv2.imread(f'{UPLOAD_FOLDER}/{name}') for name in image_names]
+    print(filenames)
+    print(f'image name {image_names}, video name {video_names} filename {filenames}')
+    device='cuda' if torch.cuda.is_available() else 'cpu'
+    frame_processor = FrameProcessor()
+    result_dirs = []
     for video_name in video_names:
-        video = cv2.VideoCapture(os.path.join('utils', 'videos', video_name))
-        # os.makedirs(os.path.join('results'), exist_ok=True)
-        fps = video.get(cv2.CAP_PROP_FPS)
-        video_writer = cv2.VideoWriter(os.path.join('results', f'{video_name}.mp4'), cv2.VideoWriter_fourcc(*'mp4v'), fps, (int(video.get(3)),int(video.get(4))))
-        frame_count = 0
+        # print("name", video_name)
+        all_frame_results=[]
+        video = cv2.VideoCapture(f'utils/videos/{video_name}')
+        # fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        # os.makedirs(f'results/{video_name}', exist_ok=True)
+        frame_count=0
+        print(f"Number of frames: {int(video.get(cv2.CAP_PROP_FRAME_COUNT))} Processing interval: {interval}")
         while video.isOpened():
             ret, frame = video.read()
             if not ret:
                 break
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            if frame_count % interval == 0:
-                frame_results = frame_processor.image_query(image=frame, image_query=images)
-                frame_results['frame'] = frame_count
-                visualized_frame = visualize_results(frame, frame_results, f"Image: {', '.join(image_names)}")
-                video_writer.write(visualized_frame)
+            frame=cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
+            if frame_count%interval==0:
+                result=frame_processor.image_query(frame,images[0])
+                result['frame']=frame_count
+                print(result)
+                all_frame_results.append(result)
             else:
-                video_writer.write(frame)
-            frame_count += 1
-        video_writer.release()
+                all_frame_results.append({'frame':frame_count})
+            frame_count+=1
         video.release()
+        results = {
+            'query':image_names,
+            'type':'image',
+            'result':all_frame_results,
+        }
+        video_result=VideoResult()
+        video_result.from_data_dict(results)
+        sorted_chunks_ma=video_result.sort_logits_chunks_ma(90)
+        result_dir=video_result.dump_top_k_chunks(video_name,sorted_chunks_ma,5)
+        result_dirs.append(result_dir[0])
+    return result_dirs
 
 def process_lang_query(body):
     os.makedirs('results', exist_ok=True)
@@ -141,7 +171,7 @@ def process_lang_query(body):
         sorted_chunks_ma=video_result.sort_logits_chunks_ma(90)
         # for k in sorted_chunks_ma:
         #     sorted_chunks_ma[k]=sorted_chunks_ma[k]
-        result_dir=video_result.dump_top_k_chunks(video_name,sorted_chunks_ma,3)
+        result_dir=video_result.dump_top_k_chunks(video_name,sorted_chunks_ma,5)
         result_dirs.append(result_dir[0])
     return result_dirs
 if __name__ == '__main__':
