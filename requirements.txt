@@ -6,7 +6,7 @@ pymongo
 Werkzeug
 pika
 flask_cors
-opencv-python
+# opencv-python
 torch
 torchvision
 thop
