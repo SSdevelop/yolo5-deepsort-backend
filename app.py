@@ -171,7 +171,7 @@ def process_lang_query(body):
         sorted_chunks_ma=video_result.sort_logits_chunks_ma(90)
         # for k in sorted_chunks_ma:
         #     sorted_chunks_ma[k]=sorted_chunks_ma[k]
-        result_dir=video_result.dump_top_k_chunks(video_name,sorted_chunks_ma,5)
+        result_dir=video_result.dump_top_k_chunks(video_name,sorted_chunks_ma,3)
         result_dirs.append(result_dir[0])
     return result_dirs
 if __name__ == '__main__':
