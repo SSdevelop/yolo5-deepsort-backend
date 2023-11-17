@@ -331,10 +331,10 @@ class VideoResult:
                         if j==max_key_location:
                             print(f"Max box: {box}")
                             color=(0,215,255)
-                        else:
-                            color=(0,0,255)
-                        cv2.rectangle(img=frame,pt1=(p1_x,p1_y),pt2=(p2_x,p2_y),color=color,thickness=3)
-                        cv2.putText(frame, "{:.2f}".format(box[1]),(p1_x+5, p1_y+25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
+                            # else:
+                            #     color=(0,0,255)
+                            cv2.rectangle(img=frame,pt1=(p1_x,p1_y),pt2=(p2_x,p2_y),color=color,thickness=3)
+                            cv2.putText(frame, "{:.2f}".format(box[1]),(p1_x+5, p1_y+25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
                     edited_frames.append(frame)
                 # print(edited_frames)
                 fourcc = cv2.VideoWriter_fourcc(*'VP80')

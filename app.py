@@ -169,6 +169,7 @@ def process_lang_query(body):
         video_result=VideoResult()
         video_result.from_data_dict(results)
         sorted_chunks_ma=video_result.sort_logits_chunks_ma(90)
+        print(sorted_chunks_ma)
         # for k in sorted_chunks_ma:
         #     sorted_chunks_ma[k]=sorted_chunks_ma[k]
         result_dir=video_result.dump_top_k_chunks(video_name,sorted_chunks_ma,3)
