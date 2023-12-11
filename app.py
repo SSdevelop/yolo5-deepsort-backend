@@ -81,7 +81,7 @@ def hello():
 def process_image_query(body, file):
     os.makedirs('results', exist_ok=True)
     os.makedirs('results/temp', exist_ok=True)
-    interval = 5 
+    interval = 6
     video_names_temp = body['video_names']
     if not isinstance(video_names_temp, list):
         video_names = [video_names_temp]
@@ -131,7 +131,7 @@ def process_image_query(body, file):
         video_result=VideoResult()
         video_result.from_data_dict(results)
         sorted_chunks_ma=video_result.sort_logits_chunks_ma(90)
-        result_dir=video_result.dump_top_k_chunks(video_name,sorted_chunks_ma,5)
+        result_dir=video_result.dump_top_k_chunks(video_name,sorted_chunks_ma,3)
         result_dirs.append(result_dir[0])
     return result_dirs
 

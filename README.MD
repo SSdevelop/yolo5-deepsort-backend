@@ -12,6 +12,4 @@ docker build -t airport_backend .
 ```sh
 docker run -it --rm -p 0.0.0.0:5000:5000 -v .:/app --gpus all --name airport_backend airport_backend bash ./run.sh
 ```
-5. Once the container's bash is open, run ```./install_dino.sh```. This command will install GroundingDINO and its weights.
-6. Run the backend using ```flask run --host=0.0.0.0```. This command is important as it makes flask discoverable. Otherwise errors will be thrown.
-7. Run the frontend seperatly and test.
+5. Run the frontend seperatly and test.
