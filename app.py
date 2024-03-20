@@ -141,6 +141,12 @@ def process_lang_query(body):
     video_names = body['video_names'].split(',')
     result_dirs = []
     for video_name in video_names:
+        video_title = video_name.split('.')[0]
+        result_folder_name = video_title + '_' + lang_query[0].replace(" ", "_")
+        if os.path.exists(f'results/{result_folder_name}'):
+            result_dirs.append(f'./results/{result_folder_name}')
+            continue
+        
         video = cv2.VideoCapture(os.path.join('utils', 'videos', video_name))
         # os.makedirs(os.path.join('results'), exist_ok=True)
         fps = video.get(cv2.CAP_PROP_FPS)
