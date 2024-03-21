@@ -1,0 +1,3 @@
+[submodule "GroundingDINO"]
+	path = model/GroundingDINO
+	url = https://github.com/IDEA-Research/GroundingDINO.git
